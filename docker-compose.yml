@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  orchids-db:
+    image: postgres:15-alpine
+    container_name: orchids-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: railway
+    ports:
+      - "5433:5432"
+    volumes:
+      - orchids-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  orchids-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: orchids-api
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      orchids-db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/api/posts || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  orchids-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: orchids-frontend
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      orchids-api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  orchids-db-data:

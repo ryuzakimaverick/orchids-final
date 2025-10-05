@@ -1,0 +1,41 @@
+# syntax=docker/dockerfile:1.7
+
+# Use Node 20 instead of Node 18 for Vite/React compatibility
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy package manifest and install dependencies
+COPY package.json ./
+RUN npm install
+
+# Copy Prisma schema early so prisma generate works
+COPY prisma ./prisma
+
+# Copy rest of project
+COPY . .
+
+# Generate Prisma client before build
+RUN npx prisma generate
+
+# Build the Next.js API and prune dev dependencies
+RUN npm run build
+RUN npm prune --omit=dev
+
+# ---- Runner stage ----
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV PORT=8080
+
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/server.js ./server.js
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/lib ./lib
+
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:8080/api/posts || exit 1
+CMD ["node", "server.js"]
