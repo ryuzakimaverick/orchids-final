@@ -16,11 +16,11 @@ function App() {
   useEffect(() => {
     const controller = new AbortController();
 
-    const apiUrl =
-      window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1"
-        ? "http://localhost:8080"
-        : import.meta.env.VITE_API_URL || "http://orchids-api:8080";
+    const origin = window.location.origin;
+
+    const apiUrl = origin.includes("railway.app")
+      ? origin
+      : import.meta.env.VITE_API_URL || "http://localhost:8080";
 
     fetch(`${apiUrl}/api/posts`, {
       signal: controller.signal,
