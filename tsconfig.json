@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2020"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -13,9 +17,19 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "types": ["node"]
+    "jsx": "preserve",
+    "types": [
+      "node"
+    ],
+    "incremental": true
   },
-  "include": ["src", "prisma/**/*.ts", "lib/**/*.ts", "pages/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "src",
+    "prisma/**/*.ts",
+    "lib/**/*.ts",
+    "pages/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
