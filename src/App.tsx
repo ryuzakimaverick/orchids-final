@@ -16,13 +16,9 @@ function App() {
   useEffect(() => {
     const controller = new AbortController();
 
-    const origin = window.location.origin;
+    const apiUrl = "/api/posts";
 
-    const apiUrl = origin.includes("railway.app")
-      ? origin
-      : import.meta.env.VITE_API_URL || "http://localhost:8080";
-
-    fetch(`${apiUrl}/api/posts`, {
+    fetch(apiUrl, {
       signal: controller.signal,
     })
       .then(async (response) => {
