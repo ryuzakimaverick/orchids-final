@@ -1,41 +1,39 @@
 # syntax=docker/dockerfile:1.7
 
-# Use Node 20 instead of Node 18 for Vite/React compatibility
 FROM node:20-alpine AS builder
 WORKDIR /app
-
-# Copy package manifest and install dependencies
-COPY package.json ./
-RUN npm install
-
-# Copy Prisma schema early so prisma generate works
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY prisma ./prisma
-
-# Copy rest of project
-COPY . .
-
-# Generate Prisma client before build
+COPY lib ./lib
+COPY pages ./pages
+COPY next.config.js ./next.config.js
+COPY server.js ./server.js
+COPY tsconfig.json ./tsconfig.json
+COPY next-env.d.ts ./next-env.d.ts
+COPY public ./public
+COPY src ./src
+COPY .env.example ./
 RUN npx prisma generate
-
-# Build the Next.js API and prune dev dependencies
 RUN npm run build
 RUN npm prune --omit=dev
 
-# ---- Runner stage ----
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
-
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/server.js ./server.js
-COPY --from=builder /app/next.config.js ./next.config.js
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/lib ./lib
-
+COPY --from=builder /app/pages ./pages
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/server.js ./server.js
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
+COPY --from=builder /app/next-env.d.ts ./next-env.d.ts
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1:8080/api/posts || exit 1
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
